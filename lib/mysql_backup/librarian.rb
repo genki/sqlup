@@ -92,7 +92,8 @@ class MysqlBackup::Librarian
   end
   
   def mysql_server
-    @mysql_server ||= MysqlBackup::Server.new :connection => create_connection, :log => log
+    @mysql_server ||= MysqlBackup::Server.new :connection => create_connection,
+      :log => log, :log_bin_dir => @log_bin_dir
   end
   
   def create_backup_group_collection_from_storage
