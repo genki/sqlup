@@ -27,6 +27,7 @@ class MysqlBackup::Server
   
   # The MySQL connection
   attr_accessor :connection
+  attr_accessor :log_bin_dir
   
   # Returns just the base element of innodb_data_file_path.
   # Given 

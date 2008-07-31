@@ -33,6 +33,8 @@ class MysqlBackup::Librarian
   
   # S3 parameters
   attr_accessor :access_key_id, :secret_access_key, :bucket
+
+  attr_accessor :log_bin_dir
   
   # Takes a required argument to specify the location of the log files:
   #
