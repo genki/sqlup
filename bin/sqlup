@@ -31,6 +31,7 @@ module Example extend OptiFlagSet
   optional_flag 'user', :description => 'The mysql user'
   optional_flag 'pass', :description => 'The mysql password'
   optional_flag 'user', :description => 'The mysql socket'
+  optional_flag 'log_bin_dir', :description => 'The mysql binary log dir'
   optional_switch_flag 'verbose', :alternate_forms => %w(v) do
     description 'Send verbose output'
   end
@@ -78,7 +79,9 @@ when 's3'
   engine = MysqlBackup::Storage::S3.new args
   engine.read_existing_objects
 end
-librarian = MysqlBackup::Librarian.new :log => log, :storage => engine, :bucket => flags.bucket, :user => flags.user, :pass => flags.pass, :sock => flags.sock
+librarian = MysqlBackup::Librarian.new :log => log, :storage => engine,
+  :bucket => flags.bucket, :user => flags.user, :pass => flags.pass,
+  :sock => flags.sock, :log_bin_dir => flags.log_bin_dir
 
 begin
   if flags.ls
