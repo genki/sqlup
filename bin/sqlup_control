@@ -1,0 +1,40 @@
+#!/usr/bin/env ruby
+#
+# Normally run like so:
+#
+# export SQLUP_PID_DIR=/tmp
+# sqlup_control start -- -logs_delay 10 log_daemon
+#
+# This will back up your log files every 10 seconds.
+#
+# ~/.sqluprc can contain a line:
+#   
+#   pid_dir: /var/run/sqlup
+#
+# The pidfile will be stored in that directory.  If that key isn't present,
+# the SQLUP_PID_DIR environment variable will be used, and finally
+# the directory that the script is in.
+
+require 'rubygems'
+require 'daemons'
+require 'optiflag'
+require 'pathname'
+
+options = {}
+
+rc_data = {}
+p = Pathname.new(ENV['HOME']) + '.sqluprc'
+if p.readable?
+  rc_data = YAML::load p.open
+end
+
+pid_dir = rc_data['pid_dir'] || ENV['SQLUP_PID_DIR']
+
+if pid_dir
+  options[:dir] = pid_dir
+  options[:dir_mode] = :normal
+else
+  options[:dir_mode] = :script
+end
+
+Daemons.run(File.dirname(__FILE__) + '/sqlup', options)

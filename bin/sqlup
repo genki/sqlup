@@ -1,0 +1,126 @@
+#!/usr/bin/env ruby
+#
+
+require 'rubygems'
+require 'optiflag'
+require 'pp'
+require 'logger'
+require 'active_record/vendor/mysql'
+require 'ostruct'
+
+require File.dirname(__FILE__) + '/../lib/mysql_backup'
+
+module Example extend OptiFlagSet
+  keyword 'ls', :description => "Print a list of all backups."
+  keyword 'mysqldump', :description => 'Backup using mysqldump'
+  keyword 'binary', :description => 'Backup mysql data files'
+  keyword 'logs', :description => 'Backup the binary log files'
+  keyword 'log_daemon', :description => "Backup the binary logs every --logs_delay seconds."
+  keyword 'get', :description => 'Get a binary or a mysqldump backup.  Requires --name'
+  keyword 'get_logs', :description => "Get all the current and complete logs"
+  keyword 'rm', :description => 'Remove a backup (use -name to specify which backup to remove)'
+  keyword 'help'
+  optional_flag 'bucket', :description => "The name of the S3 bucket"
+  optional_flag 'backup_type', :description => "(ls) The kind of backup"
+  optional_flag 'skip_most_recent', :description => "(ls) Do not display the most recent N logs.  Usually used to get a list of obsolete current logs."
+  optional_flag 'name', :description => '(get, rm) The name of the backup to process'
+  optional_flag "engine", :description => "The storage engine.  The default (and currently the only option) is s3."
+  optional_flag "get_directory", :alternate_forms => 'd', :description => "The directory to write files for the get command (defaults to the current directory)"
+  optional_flag 'logs_delay', :description => 'The delay (in seconds, as a float) to use for log_daemon.  Defaults to 1.'
+  optional_flag 'config', :description => 'The location of the .sqluprc file to use (instead of ENV[HOME]/.sqluprc)'
+  optional_flag 'user', :description => 'The mysql user'
+  optional_flag 'pass', :description => 'The mysql password'
+  optional_flag 'user', :description => 'The mysql socket'
+  optional_switch_flag 'verbose', :alternate_forms => %w(v) do
+    description 'Send verbose output'
+  end
+  and_process!
+end 
+
+flags = OpenStruct.new ARGV.flags
+
+if flags.help
+  puts File.readlines(File.dirname(__FILE__) + '/../README.txt')
+  exit 0
+end
+
+puts "Warning: no -bucket specified" unless flags.bucket
+
+if flags.get && !flags.name
+  raise RuntimeError, "You must specify the name of a backup (--name)"
+end
+
+if flags.verbose
+  log = Logger.new $stderr
+  log.level = Logger::DEBUG
+else
+  log = nil
+end
+
+# Read in more flags from the .sqluprc config file
+flags.config ||= (Pathname.new(ENV['HOME'] || '/') + '.sqluprc').cleanpath
+p = Pathname.new flags.config
+if p.readable?
+  keys = YAML::load p.open
+  keys.each_pair do |k,v|
+    flags.send "#{k}=", v
+  end
+else
+  raise RuntimeError, ("Cannot open #{p.to_s}; that file should have two lines, one for access_key_id: yourkey and the other for secret_access_key: yourotherkey")
+end
+
+engine = flags.engine || 's3'
+
+case engine
+when 's3'
+  # Read the keys from the $HOME/.sqluprc file
+  args = {:log => log, :bucket => flags.bucket, :access_key_id => flags.access_key_id, :secret_access_key => flags.secret_access_key}
+  engine = MysqlBackup::Storage::S3.new args
+  engine.read_existing_objects
+end
+librarian = MysqlBackup::Librarian.new :log => log, :storage => engine, :bucket => flags.bucket, :user => flags.user, :pass => flags.pass, :sock => flags.sock
+
+begin
+  if flags.ls
+    klass = Kernel.const_get flags.backup_type rescue nil
+    klass ||= case flags.backup_type
+    when /log_complete/: MysqlBackup::Librarian::Backup::Log::Complete
+    when /log_current/: MysqlBackup::Librarian::Backup::Log::Current
+    when /log/: MysqlBackup::Librarian::Backup::Log
+    end
+    klass ||= Object
+    range = 0..-1
+    if flags.skip_most_recent
+      range = 0..(-(flags.skip_most_recent.to_i) - 1)
+    end
+    puts librarian.ls(klass).slice(range).join("\n")
+  end
+  if flags.mysqldump
+    librarian.backup_mysqldump
+  end
+  if flags.binary
+    librarian.backup_data_files
+  end
+  if flags.rm
+    librarian.rm flags.name
+  end
+  if flags.logs
+    librarian.backup_binary_logs
+  end
+  if flags.get
+    librarian.get flags.name, flags.get_directory || '.'
+  end
+  if flags.get_logs
+    librarian.get_logs flags.get_directory || '.'
+  end
+  if flags.log_daemon
+    while true
+      librarian.backup_binary_logs
+      delay = flags.logs_delay.to_f
+      sleep(delay == 0 ? 1 : delay)
+    end
+  end
+rescue Exception => e
+  puts "Exception: #{e.class}: #{e.message}\n\t#{e.backtrace.join("\n\t")}"
+  exit 1
+end

@@ -1,0 +1,49 @@
+== 0.0.13 / 2007-07-23
+
+  * Improved handling of command-line options.  You can
+    now put options in your .sqluprc file for any command-line
+    option, including user, pass, and sock (the mysql options)
+   
+
+== 0.0.12 / 2007-07-23
+
+* 1 major enhancement
+  * Switched to using active_record's mysql connection library instead of the
+    mysql gem
+
+== 0.0.9 / 2007-07-16
+
+* 1 major enhancement
+  * More fixes for missing requires
+
+== 0.0.8 / 2007-07-16
+
+* 1 major enhancement
+  * Added missing require statement to sqlup_control
+
+== 0.0.7 / 2007-07-16
+
+* 1 major enhancement
+  * ActiveRecord removed from dependencies
+
+== 0.0.6 / 2007-07-16
+
+* 1 major enhancement
+  * ActiveRecord not used any more
+
+== 0.0.5 / 2007-07-03
+
+* 1 major enhancement
+  * Added activerecord to dependencies as a quick fix;
+    code should be changed to not use activerecord.
+
+== 0.0.4 / 2007-06-24
+
+* 1 major enhancement
+  * Added aws-s3 to dependencies
+
+== 0.0.1 / 2007-06-18
+
+* 1 major enhancement
+  * Birthday!
+
