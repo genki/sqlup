@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name = %q{sqlup}
-  s.version = "0.0.13.2"
+  s.version = "0.0.13.3"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["James Moore"]

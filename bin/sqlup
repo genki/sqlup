@@ -90,6 +90,9 @@ begin
     when /log_complete/: MysqlBackup::Librarian::Backup::Log::Complete
     when /log_current/: MysqlBackup::Librarian::Backup::Log::Current
     when /log/: MysqlBackup::Librarian::Backup::Log
+    when /full_binary/: MysqlBackup::Librarian::Backup::Full::Binary
+    when /full_mysqldump/: MysqlBackup::Librarian::Backup::Full::Mysqldump
+    when /full/: MysqlBackup::Librarian::Backup::Full
     end
     klass ||= Object
     range = 0..-1

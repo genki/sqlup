@@ -6,5 +6,5 @@ require 'mysql_backup/librarian'
 require 'mysql_backup/storage/s3'
 
 module MysqlBackup
-  VERSION = '0.0.13.2'
+  VERSION = '0.0.13.3'
 end
